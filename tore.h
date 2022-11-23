@@ -1,40 +1,37 @@
-#ifndef SPHERE_H
-#define SPHERE_H
+#ifndef TORE_H
+#define TORE_H
 
 #include "util.h"
 
 #include "surface.h"
 
 
-class sphere : public surface {
+class tore : public surface {
     public:
-        sphere() {}
+        tore() {}
 
-        sphere(point3 cen, double r)
-            : center(cen), radius(r) {};
+        tore(double R, double r)
+            : R(R), r(r) {};
 
         virtual bool contacte(
             const ray& r, double t_min, double t_max, contacte_rec& rec) const override;
 
     public:
-        point3 center;
-        double radius;
+        double R;
+        double r
         
 };
 
 
-bool sphere::contacte(const ray& r, double t_min, double t_max, contacte_rec& rec) const {
-    vec3 oc = r.orig() - center;
-    double a = r.dir().length_squared();
-    double half_b = dot(oc, r.dir());
-    double c = oc.length_squared() - radius*radius;
+bool tore::contacte(const ray& r, double t_min, double t_max, contacte_rec& rec) const {
+ 
+    // vec3 oc = r.orig() - center;
+    // double a = r.dir().length_squared();
+    // double half_b = dot(oc, r.dir());
+    // double c = oc.length_squared() - radius*radius;
 
-    double discriminant = half_b*half_b - a*c;
-
-    if (discriminant < 0) 
-        return false;
-
-    double sqrtd = sqrt(discriminant);
+    // double x, y, z;
+    // tmp = 
 
     // si le point de contacte est bien dans l'intervalle [t_min, t_max] on l"enregistre 
     double root = (-half_b - sqrtd) / a;
