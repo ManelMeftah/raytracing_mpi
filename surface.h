@@ -1,12 +1,8 @@
+#pragma once
 #ifndef SURFACE_H
 #define SURFACE_H
 
 #include "util.h"
-
-
-
-// tout object avec lequel il y a eu contacte avec un rayon
-// pour P(t) : point de contacte, normale à l'objet, face avant
 
 struct contacte_rec {
     point3 p;
@@ -25,11 +21,10 @@ struct contacte_rec {
     }
 };
 
-
 class surface {
-    public:
-        virtual bool contacte(const ray& r, double t_min, double t_max, contacte_rec& rec) const = 0;
+public:
+	virtual bool contacte(const ray& r, double t_min, double t_max, contacte_rec& rec) const = 0;
+	
 };
-
 
 #endif
