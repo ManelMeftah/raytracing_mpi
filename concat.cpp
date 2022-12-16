@@ -40,7 +40,7 @@ void test()
 
 int main(int argc, char *argv []) 
 {
-    for(int i=10; i>=0; --i)
+    for(int i=100; i>=0; --i)
     {
         string fname1 = "proc_" + to_string(i) + ".ppm";
         ifstream in1(fname1);

@@ -35,90 +35,88 @@ color couleurRayon(const ray& r, const surface& monde) {
 }
 
 //doesn't work bu concat with concat.cpp works, why ?
-void concat(int nbFiles)
+void concat(int nbFiles, string nameOutput)
 {
-    fstream finput, foutput;
-    
-    
-    for(int i=nbFiles; i>=0; i--)
+    cout << "nb files " << nbFiles << endl;
+    for(int i=nbFiles; i>=0; --i)
     {
-        foutput.open("header.ppm", ios::app);
-        string nfile = "proc_"+to_string(i)+".ppm";
-        finput.open(nfile, ios::in);
-        string str1;
-        while(getline(finput, str1))
+        string fname1 = "proc_" + to_string(i) + ".ppm";
+        ifstream in1(fname1);
+        ofstream outFile(nameOutput, ios::app);
+        string line;
+        int count =1;
+        while(getline(in1, line))
         {
-            foutput << str1;
-            foutput << endl;
+            outFile << line << '\n';
+            count++;
         }
-        finput.close();
-        foutput.close();
     }
+    // fstream finput, foutput;
+    
+    
+    // for(int i=nbFiles; i>=0; i--)
+    // {
+    //     foutput.open("header.ppm", ios::app);
+    //     string nfile = "proc_"+to_string(i)+".ppm";
+    //     finput.open(nfile, ios::in);
+    //     string str1;
+    //     while(getline(finput, str1))
+    //     {
+    //         foutput << str1;
+    //         foutput << endl;
+    //     }
+    //     finput.close();
+    //     foutput.close();
+    // }
     
 
 }
 
 
-void calcul(int finJ, int debJ, string fname, surface_list monde, camera cam){
+void calcul(int debJ, int finJ, string fname, surface_list monde, camera cam){
     cout << "Writing in file " << fname << endl;
-    // for (int j = finJ; j <= debJ; ++j)
-    for (int j = finJ; j >= debJ; --j)
+    // for (int j = debJ-1; j >= finJ; ++j)
+    for (int j = debJ; j >= finJ; --j)
         {    
             for (int i = 0; i < image_width; ++i) 
             {
                 color pixel_color(0,0,0);
-                for(int k =0; k<echantillonsParPixel; k++)
-                {
+                // for(int k =0; k<echantillonsParPixel; k++)
+                // {
                     auto u = double(i) / (image_width-1);
                     auto v = double(j) / (image_height-1);
                     ray r = cam.getRay(u, v);
                     pixel_color += couleurRayon(r, monde);
-                }
+                // }
                 write_color(fname, pixel_color, echantillonsParPixel);            
             }
         }
 }
 
-int main(int argc, char *argv []) 
+void cleanup(int nbFiles)
 {
+    for(int i=0; i<=nbFiles; i++)
+    {
+        string fname = "proc_" + to_string(i) + ".ppm";
+        char char_fname[fname.length() + 1];
+        strcpy(char_fname, fname.c_str());
+        bool status = remove(char_fname);
+        if(status!=0)
+            cerr << "\n!!Could not remove file " << fname <<endl;
+    }
+}
 
-
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~MPI :~~~~~~~~~~~~~~~~~~~~~~~~~~
-    int rank, numtasks, len, rc, elemParProc, index;
-    char hostname[MPI_MAX_PROCESSOR_NAME];
-    
-    // initialize MPI
-    MPI_Init(&argc,&argv);
-
-    // get number of tasks
-    MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
-
-    // get my rank
-    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-
-    // this one is obvious
-    MPI_Get_processor_name(hostname,&len);
-    
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~FILES :~~~~~~~~~~~~~~~~~~~~~~~~~~
+void genImage(int numtasks, int rank, surface_list monde, camera cam, string nameImage)
+{
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~HEADER FILE :~~~~~~~~~~~~~~~~~~~~~~~~~~
     fstream f;
     
     string name = "proc_" + to_string(numtasks) + ".ppm";
     f.open(name, ios::out);
     f<< "P3\n" << image_width << " " << image_height <<"\n255\n"<<endl;
     f.close();
-
-
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~MONDE :~~~~~~~~~~~~~~~~~~~~~~~~~~
-    surface_list monde;    monde.add(make_shared<sphere>(point3(0,0,-1), 0.5));
-    monde.add(make_shared<sphere>(point3(0,-100.5,-1), 100));
-    // monde.add(make_shared<sphere>(point3(0,0,-0.5), 0.2));
-
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~CAMERA :~~~~~~~~~~~~~~~~~~~~~~~~~~
-    camera cam;
-
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~RENDU :~~~~~~~~~~~~~~~~~~~~~~~~~~
-    double startTime = MPI_Wtime();
-
+    
+    int elemParProc, index;
     if(rank==0)
     {    
 		//~ double start = MPI_Wtime();
@@ -147,7 +145,7 @@ int main(int argc, char *argv [])
             //Proc 0 does stuff
         string fname = "proc_0.ppm";
         calcul(elemParProc, 0, fname, monde, cam);
-        concat(numtasks);
+        
         // double end = MPI_Wtime();
         // cout << "Process 0 took " << end - allStart << " seconds to run." << endl;
     }
@@ -160,7 +158,7 @@ int main(int argc, char *argv [])
         
         string fname = "proc_" + to_string(rank) + ".ppm";
         
-        int debJ = (rank+1)*elemParProc;
+        int debJ = (rank+1)*elemParProc - 1;
         calcul(debJ, index, fname, monde, cam); 
         // double end = MPI_Wtime();
         // cout << "Process " << rank << " took " << end - start << " seconds to end." << endl; 
@@ -168,8 +166,52 @@ int main(int argc, char *argv [])
 
     MPI::COMM_WORLD.Barrier();
     if (rank == 0) {
-        cout << "Execution time: " << MPI_Wtime() - startTime << endl;
+        concat(numtasks, nameImage);
+        // cout << "Execution time: " << MPI_Wtime() - startTime << endl;
+        cleanup(numtasks);
     }
+    
+}
+
+int main(int argc, char *argv []) 
+{
+
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~MPI :~~~~~~~~~~~~~~~~~~~~~~~~~~
+    int rank, numtasks, len, rc;
+    char hostname[MPI_MAX_PROCESSOR_NAME];
+    
+    // initialize MPI
+    MPI_Init(&argc,&argv);
+
+    // get number of tasks
+    MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
+
+    // get my rank
+    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+
+    // this one is obvious
+    MPI_Get_processor_name(hostname,&len);
+    
+    
+
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~MONDE :~~~~~~~~~~~~~~~~~~~~~~~~~~
+    surface_list monde;    
+    monde.add(make_shared<sphere>(point3(0,0,-1), 0.5));
+    monde.add(make_shared<sphere>(point3(0,-100.5,-1), 100));
+    // monde.add(make_shared<sphere>(point3(0,0,-0.5), 0.2));
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~CAMERA :~~~~~~~~~~~~~~~~~~~~~~~~~~
+    camera cam;
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~RENDU :~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // double startTime = MPI_Wtime();
+
+    genImage(numtasks, rank, monde, cam, "image1.ppm");
+    monde.clear();
+    genImage(numtasks, rank, monde, cam, "image2.ppm");
+    
     MPI_Finalize();
     return EXIT_SUCCESS;
 }

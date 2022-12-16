@@ -8,10 +8,10 @@ void write_color(string fname, color c, int echParPixel)
     double g = c.y();
     double b = c.z();
 
-    double scale = 1.0 / echParPixel;
-    r*=scale;
-    g*=scale;
-    b*=scale;
+    // double scale = 1.0 / echParPixel;
+    // r*=scale;
+    // g*=scale;
+    // b*=scale;
 
     fstream f;
     f.open(fname, ios::app);

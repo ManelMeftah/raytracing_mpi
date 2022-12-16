@@ -1,0 +1,10 @@
+MI104-05 slots=10
+MI104-08 slots=10
+MI104-04 slots=10
+MI104-03 slots=10
+MI104-02 slots=10
+MI104-01 slots=10
+MI104-07 slots=10
+MI104-12 slots=10
+MI104-10 slots=10
+
